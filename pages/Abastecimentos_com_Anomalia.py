@@ -52,7 +52,7 @@ def ajustar_coluna_em_real(df, coluna):
 
 def tratar_colunas_df_abastecimentos():
 
-    lista_colunas_numericas = ['Consumo real', 'Consumo estimado', 'Quantidade']
+    lista_colunas_numericas = ['Consumo real', 'Consumo estimado', 'Quantidade', 'Distância de abastecimento']
 
     for coluna in lista_colunas_numericas:
 
