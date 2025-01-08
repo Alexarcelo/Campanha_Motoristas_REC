@@ -84,6 +84,15 @@ def tratar_colunas_df_abastecimentos():
 
     st.session_state.df_abastecimentos['meta_batida'] = st.session_state.df_abastecimentos.apply(lambda row: 1 if row['Consumo real'] >= row['Consumo estimado'] else 0, axis = 1)
 
+    lista_motoristas_historico = st.session_state.df_abastecimentos['Colaborador'].unique().tolist()
+
+    for motorista in lista_motoristas_historico:
+
+        if motorista in st.session_state.df_motoristas['Motorista Sofit'].unique().tolist():
+
+            st.session_state.df_abastecimentos.loc[st.session_state.df_abastecimentos['Colaborador']==motorista, 'Colaborador']=\
+                st.session_state.df_motoristas.loc[st.session_state.df_motoristas['Motorista Sofit']==motorista, 'Motorista Análise'].values[0]
+
 def puxar_dados_google_drive():
 
     puxar_aba_simples(st.session_state.id_gsheet, 'Motoristas', 'df_motoristas')
