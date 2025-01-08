@@ -184,6 +184,56 @@ def exibir_tabela(df):
     st.pyplot(fig)
     plt.close(fig)
 
+def inserir_info_drive(df_itens_faltantes, id_gsheet, nome_aba):
+
+    project_id = "grupoluck"
+    secret_id = "cred-luck-aracaju"
+    secret_client = secretmanager.SecretManagerServiceClient()
+    secret_name = f"projects/{project_id}/secrets/{secret_id}/versions/latest"
+    response = secret_client.access_secret_version(request={"name": secret_name})
+    secret_payload = response.payload.data.decode("UTF-8")
+    credentials_info = json.loads(secret_payload)
+    scopes = ["https://www.googleapis.com/auth/spreadsheets"]
+    credentials = Credentials.from_service_account_info(credentials_info, scopes=scopes)
+    client = gspread.authorize(credentials)
+    
+    spreadsheet = client.open_by_key(id_gsheet)
+
+    sheet = spreadsheet.worksheet(nome_aba)
+    sheet_data = sheet.get_all_values()
+    last_filled_row = len(sheet_data)
+    data = df_itens_faltantes.values.tolist()
+    start_row = last_filled_row + 1
+    start_cell = f"A{start_row}"
+    
+    sheet.update(start_cell, data)
+
+def verificar_cadastro_colaboradores_categorias(df_group):
+
+    colaboradores_sem_categoria = df_group[pd.isna(df_group['Categoria'])]['Colaborador'].unique().tolist()
+
+    if len(colaboradores_sem_categoria)>0:
+
+        df_insercao = pd.DataFrame(data=colaboradores_sem_categoria, columns=['Motorista'])
+
+        inserir_info_drive(df_insercao, st.session_state.id_gsheet, 'Motoristas')
+
+        st.error(f"Os motoristas {', '.join(colaboradores_sem_categoria)} não estão cadastrados na aba Motoristas da planilha no Drive. Precisa definir um apelido pra ele e a categoria que ele pertence")
+
+        st.stop()
+
+def exibir_tabela_com_titulo(df, titulo):
+    fig, ax = plt.subplots(figsize=(12, 4))
+    ax.axis('tight')
+    ax.axis('off')
+    the_table = ax.table(cellText=df.values, colLabels=df.columns, cellLoc='center', loc='center')
+    the_table.auto_set_font_size(False)
+    the_table.set_fontsize(10)
+    the_table.scale(1.2, 1.2)
+    fig.suptitle(titulo, fontsize=16, fontweight='bold', y=1.05, ha='center')
+    st.pyplot(fig)
+    plt.close(fig)
+
 st.set_page_config(layout='wide')
 
 if not 'id_gsheet' in st.session_state:
@@ -236,7 +286,7 @@ if data_inicial and data_final:
     
     with row0[0]:
     
-        tipo_analise = st.radio('Tipo de Análise', ['Motorista', 'Tipo de Veículo', 'Metas Batidas'], index=None)
+        tipo_analise = st.radio('Tipo de Análise', ['Motorista', 'Tipo de Veículo', 'Metas Batidas', 'Ranking'], index=None)
 
     with row1[0]:
 
@@ -388,3 +438,39 @@ if data_inicial and data_final:
         df_filtro_metas = df_filtro_colunas[df_filtro_colunas['Metas Batidas']==1][['Colaborador', 'Veículo', 'Média Km/l', 'Meta Km/l']].reset_index(drop=True)
 
         exibir_tabela(df_filtro_metas)
+
+    elif tipo_analise=='Ranking':
+
+        df_group = df_filtro_data.groupby(['Colaborador']).agg({'Distância de abastecimento': 'sum', 'Quantidade': 'sum', 'Consumo estimado': 'mean'}).reset_index()
+
+        df_group['Média Km/l'] = round(df_group['Distância de abastecimento']/df_group['Quantidade'], 1)
+
+        df_group['Rendimento'] = round(df_group['Média Km/l']/df_group['Consumo estimado']-1, 5)
+
+        df_group['Rendimento'] = round(df_group['Rendimento']*100, 2)
+
+        df_group = pd.merge(df_group, st.session_state.df_motoristas, left_on='Colaborador', right_on='Motorista Análise', how='left')
+
+        verificar_cadastro_colaboradores_categorias(df_group)
+
+        df_group = df_group.drop(columns=['Motorista Sofit', 'Motorista Análise'])
+
+        df_group = df_group.sort_values(by='Rendimento', ascending=False)
+
+        df_group['Rendimento'] = df_group['Rendimento'].astype(str)
+
+        df_group['Rendimento'] = df_group['Rendimento'] + '%'
+
+        filtrar_categoria = st.selectbox('Categoria', sorted(df_group['Categoria'].unique()), index=None)
+
+        if filtrar_categoria:
+
+            df_ref = df_group[df_group['Categoria']==filtrar_categoria]
+
+            df_ref['Ranking'] = range(1, len(df_ref)+1)
+
+            df_ref['Ranking'] = df_ref['Ranking'].astype(str)
+
+            df_ref['Ranking'] = df_ref['Ranking'] + 'º'
+
+            exibir_tabela_com_titulo(df_ref[['Ranking', 'Rendimento', 'Colaborador']], filtrar_categoria)
