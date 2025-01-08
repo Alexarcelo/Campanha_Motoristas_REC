@@ -101,10 +101,6 @@ def puxar_dados_google_drive():
 
     tratar_colunas_df_abastecimentos()
 
-    puxar_aba_simples(st.session_state.id_gsheet, 'Frota | Tipo', 'df_frota')
-
-    st.session_state.df_frota['Veículo'] = st.session_state.df_frota['Veículo'].astype(str)
-
 def criar_coluna_performance(df_resumo_performance):
 
     df_resumo_performance['Performance'] = round(df_resumo_performance['meta_batida'] / df_resumo_performance['Fornecedor'], 2)
