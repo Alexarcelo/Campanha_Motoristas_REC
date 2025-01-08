@@ -101,10 +101,6 @@ def puxar_dados_google_drive():
 
     tratar_colunas_df_abastecimentos()
 
-    puxar_aba_simples(st.session_state.id_gsheet, 'Frota | Tipo', 'df_frota')
-
-    st.session_state.df_frota['Veículo'] = st.session_state.df_frota['Veículo'].astype(str)
-
 st.set_page_config(layout='wide')
 
 if not 'id_gsheet' in st.session_state:
