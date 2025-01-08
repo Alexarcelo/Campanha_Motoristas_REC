@@ -179,7 +179,7 @@ if not 'df_motoristas' in st.session_state:
 
         puxar_dados_google_drive()
 
-st.title('Performance Mensal Motoristas - Recife')
+st.title('Performance Mensal Motoristas')
 
 st.divider()
 
