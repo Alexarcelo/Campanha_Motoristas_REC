@@ -8,6 +8,7 @@ from google.cloud import secretmanager
 from google.oauth2.service_account import Credentials
 from google.oauth2 import service_account
 from datetime import date
+import json
 
 def puxar_aba_simples(id_gsheet, nome_aba, nome_df):
 
