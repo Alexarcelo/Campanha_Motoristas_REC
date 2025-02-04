@@ -59,18 +59,6 @@ def transformar_coluna_em_numerica(df, coluna):
 
     return df
 
-def ajustar_coluna_em_real(df, coluna):
-
-    df[coluna] = df[coluna].str.replace('R$ ', '')
-
-    df[coluna] = df[coluna].str.replace('.', '')
-
-    df[coluna] = df[coluna].str.replace(',', '.')
-
-    df[coluna] = pd.to_numeric(df[coluna], errors='coerce')
-
-    return df
-
 def ajustar_coluna_data_ano_mes(df):
 
     df['Data'] = pd.to_datetime(df['Data'], format='%d/%m/%Y %H:%M:%S')
