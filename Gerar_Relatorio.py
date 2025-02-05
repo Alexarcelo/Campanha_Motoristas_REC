@@ -104,6 +104,8 @@ def tratar_colunas_df_abastecimentos(df, lista_colunas_texto, lista_colunas_nume
 
     df['Motorista'] = df['Motorista'].replace(dict_renomear_motoristas)
 
+    df = pd.merge(df, st.session_state.df_motoristas[['Motorista Phoenix', 'Grupo Motorista']], left_on='Motorista', right_on='Motorista Phoenix', how='left')
+
 def puxar_dados_google_drive():
 
     puxar_aba_simples(st.session_state.id_gsheet, 'Motoristas', 'df_motoristas')
