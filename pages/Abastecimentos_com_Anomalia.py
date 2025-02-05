@@ -6,7 +6,7 @@ st.title('Abastecimentos com Anomalias')
 
 if not 'df_servicos_abastecimentos' in st.session_state:
 
-    st.error('As anomalias são avaliadas em cima de uma análise gerada, portanto, é preciso gerar uma análise no painel mensal ou no painel diário')
+    st.error('Precisa gerar um relatório na aba Gerar Relatório')
 
 else:
 
