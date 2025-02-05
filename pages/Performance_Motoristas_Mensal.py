@@ -294,22 +294,6 @@ row3 = st.columns(1)
 
 row4 = st.columns(2)
 
-if not 'base_luck' in st.session_state:
-
-    st.session_state.id_gsheet = '1SGTth5faSNNtAlU_4a_ehohqHAeGUf-dsILc7qqgpms'
-
-    st.session_state.base_luck = 'test_phoenix_recife'
-
-if not 'df_escalas' in st.session_state:
-
-    with st.spinner('Puxando dados do Google Drive...'):
-
-        puxar_dados_google_drive()
-
-    with st.spinner('Puxando dados do Phoenix...'):
-
-        puxar_dados_phoenix()
-
 # Ano e Mês de análise
 
 with row0[0]:
@@ -321,71 +305,6 @@ with row0[0]:
     ano_analise = st.number_input('Ano', step=1, value=ano_atual, key='ano_analise')
 
     mes_analise = st.number_input('Mês', step=1, value=mes_atual, key='mes_analise')
-
-    gerar_analise = st.button('Gerar Análise')
-
-# Atualizar dados do Google Drive
-
-with row0[1]:
-
-    atualizar_dfs_excel = st.button('Atualizar Dados Google Drive')
-
-    if atualizar_dfs_excel:
-
-        with st.spinner('Puxando dados do Google Drive...'):
-
-            puxar_dados_google_drive()
-
-    atualizar_dados_phoenix = st.button('Atualizar Dados Phoenix')
-
-    if atualizar_dados_phoenix:
-
-        with st.spinner('Puxando dados do Phoenix...'):
-
-            puxar_dados_phoenix()
-
-if gerar_analise:
-
-    # Pegando escalas do mês de análise
-
-    df_escalas = st.session_state.df_escalas[(st.session_state.df_escalas['ano']==ano_analise) & (st.session_state.df_escalas['mes']==mes_analise)].reset_index(drop=True)
-
-    # Preenchendo valores None da coluna Data | Horario Apresentacao
-
-    df_escalas['Data | Horario Apresentacao'] = df_escalas.apply(lambda row: pd.to_datetime(f"{row['Data da Escala']} 08:00:00") 
-                                                                 if pd.isna(row['Data | Horario Apresentacao']) else row['Data | Horario Apresentacao'], axis=1)
-    
-    # Renomeando escalas que são apoios
-
-    df_escalas.loc[pd.notna(df_escalas['Escala Principal']), 'Servico'] = 'APOIO'
-
-    # Agrupando escalas
-
-    df_escalas_group = df_escalas.groupby(['ano', 'mes', 'Data da Escala', 'Escala', 'Veiculo', 'Placa', 'Motorista']).agg({'Data | Horario Apresentacao': 'min', 'Servico': 'first'}).reset_index()
-
-    # Inserindo categorias de serviços e verificando se todos os serviços estão com suas categorias cadastradas
-
-    df_escalas_group = pd.merge(df_escalas_group, st.session_state.df_servicos_categorias, on='Servico', how='left')
-
-    verificar_servicos_sem_categoria(df_escalas_group)
-
-    # Filtrando apenas as placas contidas na aba metas
-
-    df_escalas_group = df_escalas_group[df_escalas_group['Placa'].isin(st.session_state.df_metas['Placa'].unique())].reset_index(drop=True)
-
-    # Inserindo categoria das metas e valor de meta pra cada veículo/serviço e verificando se todas as combinações tem meta cadastradas
-
-    df_escalas_group = pd.merge(df_escalas_group, st.session_state.df_metas, on=['Placa', 'Categoria Meta'], how='left')
-
-    verificar_veiculos_sem_meta(df_escalas_group)
-
-    # Gerando dataframe com o cruzamento dos serviços e seus abastecimentos relativos
-
-    df_servicos_abastecimentos = cruzar_servicos_e_abastecimentos(df_escalas_group)
-
-    # Retirando da análise as linhas que o robô não encontrou correspondência e avisando quais são elas
-
-    st.session_state.df_servicos_abastecimentos = retirar_servicos_sem_abastecimentos(df_servicos_abastecimentos)
 
 if 'df_servicos_abastecimentos' in st.session_state:
 
@@ -536,3 +455,6 @@ if 'df_servicos_abastecimentos' in st.session_state:
                     grid_response = AgGrid(df_resumo_performance_motorista_veiculo, gridOptions=gridOptions, enable_enterprise_modules=False, 
                                             fit_columns_on_grid_load=True)
     
+else:
+
+    st.error('Precisa gerar um relatório na aba Gerar Relatório')
