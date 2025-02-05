@@ -3,124 +3,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from st_aggrid import AgGrid, GridOptionsBuilder
-import gspread 
-from google.oauth2 import service_account
 from datetime import date
-import mysql.connector
-import decimal
-
-def gerar_df_phoenix(vw_name, base_luck):
-    
-    config = {'user': 'user_automation_jpa', 'password': 'luck_jpa_2024', 'host': 'comeia.cixat7j68g0n.us-east-1.rds.amazonaws.com', 'database': base_luck}
-
-    conexao = mysql.connector.connect(**config)
-
-    cursor = conexao.cursor()
-
-    request_name = f'SELECT * FROM {vw_name}'
-
-    cursor.execute(request_name)
-
-    resultado = cursor.fetchall()
-    
-    cabecalho = [desc[0] for desc in cursor.description]
-
-    cursor.close()
-
-    conexao.close()
-
-    df = pd.DataFrame(resultado, columns=cabecalho)
-
-    df = df.applymap(lambda x: float(x) if isinstance(x, decimal.Decimal) else x)
-
-    return df
-
-def puxar_aba_simples(id_gsheet, nome_aba, nome_df):
-
-    nome_credencial = st.secrets["CREDENCIAL_SHEETS"]
-    credentials = service_account.Credentials.from_service_account_info(nome_credencial)
-    scope = ['https://www.googleapis.com/auth/spreadsheets']
-    credentials = credentials.with_scopes(scope)
-    client = gspread.authorize(credentials)
-
-    spreadsheet = client.open_by_key(id_gsheet)
-    
-    sheet = spreadsheet.worksheet(nome_aba)
-
-    sheet_data = sheet.get_all_values()
-
-    st.session_state[nome_df] = pd.DataFrame(sheet_data[1:], columns=sheet_data[0])
-
-def transformar_coluna_em_numerica(df, coluna):
-
-    df[coluna] = df[coluna].str.replace(',', '.')
-
-    df[coluna] = pd.to_numeric(df[coluna], errors='coerce')
-
-    return df
-
-def ajustar_coluna_data_ano_mes(df):
-
-    df['Data'] = pd.to_datetime(df['Data'], format='%d/%m/%Y %H:%M:%S')
-
-    df['ano'] = df['Data'].dt.year
-
-    df['mes'] = df['Data'].dt.month
-
-    df['ano_mes'] = df['mes'].astype(str) + '/' + df['ano'].astype(str).str[-2:]
-
-    return df
-
-def verificar_motoristas_sem_correspondencia(dict_renomear_motoristas):
-
-    lista_motoristas_abastecimentos = st.session_state.df_abastecimentos['Motorista'].unique().tolist()
-
-    lista_motoristas_sem_correspondencia = list(set(lista_motoristas_abastecimentos) - set(dict_renomear_motoristas))
-
-    lista_chaves_valor_vazio = [chave for chave, valor in dict_renomear_motoristas.items() if valor == '']
-
-    lista_motoristas_final = list(set(lista_motoristas_sem_correspondencia + lista_chaves_valor_vazio))
-
-    if len(lista_motoristas_final)>0:
-
-        with row1[0]:
-
-            st.error(f'Os motoristas {", ".join(lista_motoristas_final)} não estão cadastrados na aba Motoristas. Precisa cadastrar e informar quais os seus nomes lá no Phoenix')
-
-            st.stop()
-
-def tratar_colunas_df_abastecimentos(df, lista_colunas_texto, lista_colunas_numericas):
-
-    df = ajustar_coluna_data_ano_mes(df)
-
-    for coluna in lista_colunas_texto:
-
-        df[coluna] = df[coluna].astype(str)
-
-    for coluna in lista_colunas_numericas:
-
-        df = transformar_coluna_em_numerica(df, coluna)
-
-    dict_renomear_motoristas = dict(zip(st.session_state.df_motoristas['Motorista Ticket Log'], st.session_state.df_motoristas['Motorista Phoenix']))
-
-    verificar_motoristas_sem_correspondencia(dict_renomear_motoristas)
-
-    df['Motorista'] = df['Motorista'].replace(dict_renomear_motoristas)
-
-def puxar_dados_google_drive():
-
-    puxar_aba_simples(st.session_state.id_gsheet, 'Motoristas', 'df_motoristas')
-
-    puxar_aba_simples(st.session_state.id_gsheet, 'Abastecimentos Ticket Log', 'df_abastecimentos')
-
-    tratar_colunas_df_abastecimentos(st.session_state.df_abastecimentos, ['Placa', 'Tipo de Veículo', 'Modelo', 'Motorista', 'Tipo de Combustível'], 
-                                     ['Número Frota', 'Matrícula', 'Litros', 'Valor/Litro', 'Hodômetro', 'Km Rodado', 'Km/Litro', 'Valor Total'])
-    
-    puxar_aba_simples(st.session_state.id_gsheet, 'Serviços / Categorias', 'df_servicos_categorias')
-
-    puxar_aba_simples(st.session_state.id_gsheet, 'Metas', 'df_metas')
-
-    st.session_state.df_metas = transformar_coluna_em_numerica(st.session_state.df_metas, 'Meta')
 
 def criar_coluna_performance(df_resumo_performance):
 
@@ -193,31 +76,6 @@ def grafico_duas_barras_linha_percentual(referencia, eixo_x, eixo_y1, label1, ei
     st.pyplot(fig)
     plt.close(fig)
 
-def inserir_dataframe_gsheet(df_itens_faltantes, id_gsheet, nome_aba):
-
-    nome_credencial = st.secrets["CREDENCIAL_SHEETS"]
-    credentials = service_account.Credentials.from_service_account_info(nome_credencial)
-    scope = ['https://www.googleapis.com/auth/spreadsheets']
-    credentials = credentials.with_scopes(scope)
-    client = gspread.authorize(credentials)
-    
-    spreadsheet = client.open_by_key(id_gsheet)
-
-    sheet = spreadsheet.worksheet(nome_aba)
-
-    sheet.batch_clear(["A2:Z100000"])
-
-    data = df_itens_faltantes.values.tolist()
-    sheet.update('A2', data)
-
-def puxar_dados_phoenix():
-
-    st.session_state.df_escalas = gerar_df_phoenix('vw_campanha_motoristas', st.session_state.base_luck)
-
-    st.session_state.df_escalas['ano'] = pd.to_datetime(st.session_state.df_escalas['Data da Escala']).dt.year
-
-    st.session_state.df_escalas['mes'] = pd.to_datetime(st.session_state.df_escalas['Data da Escala']).dt.month
-
 def verificar_servicos_sem_categoria(df_escalas_group):
 
     df_servicos_sem_categoria_meta = pd.DataFrame(data=df_escalas_group[(pd.isna(df_escalas_group['Categoria Meta'])) | (df_escalas_group['Categoria Meta']=='')]['Servico'].unique(), 
@@ -242,41 +100,6 @@ def verificar_veiculos_sem_meta(df_escalas_group):
         st.dataframe(df_veiculos_sem_meta_categoria, hide_index=True)
 
         st.stop()
-
-def cruzar_servicos_e_abastecimentos(df_escalas_group):
-
-    df_abastecimentos = st.session_state.df_abastecimentos.sort_values(by=['Data']).reset_index(drop=True)
-
-    df_abastecimentos['Chave'] = df_abastecimentos['Placa'].astype(str) + '_' + df_abastecimentos['Motorista'].astype(str)
-
-    df_escalas_group['Chave'] = df_escalas_group['Placa'].astype(str) + '_' + df_escalas_group['Motorista'].astype(str)
-
-    df_escalas_group['Data | Horario Apresentacao'] = pd.to_datetime(df_escalas_group['Data | Horario Apresentacao'])
-
-    df_escalas_group = df_escalas_group.sort_values(by=['Data | Horario Apresentacao']).reset_index(drop=True)
-
-    df_resultado = pd.merge_asof(df_escalas_group, df_abastecimentos[['Data', 'Chave', 'Km/Litro', 'Tipo de Veículo', 'ano_mes']], by='Chave', left_on='Data | Horario Apresentacao', right_on='Data', 
-                                 direction='forward')
-
-    df_resultado['Meta Batida'] = df_resultado.apply(lambda row: 1 if row['Km/Litro']>=row['Meta'] else 0, axis=1)
-
-    return df_resultado
-
-def retirar_servicos_sem_abastecimentos(df_servicos_abastecimentos):
-
-    df_servicos_sem_abastecimentos = df_servicos_abastecimentos[pd.isna(df_servicos_abastecimentos['Data'])]
-
-    with row1[0]:
-
-        if len(df_servicos_sem_abastecimentos)>0:
-
-            st.error('Os serviços abaixo não possuem abastecimento relativo e, portanto, foram retirados da análise')
-
-            st.dataframe(df_servicos_sem_abastecimentos[['Data da Escala', 'Escala', 'Veiculo', 'Placa', 'Motorista', 'Servico']], hide_index=True)
-
-    df_servicos_abastecimentos = df_servicos_abastecimentos[pd.notna(df_servicos_abastecimentos['Data'])].reset_index(drop=True)
-
-    return df_servicos_abastecimentos
 
 st.set_page_config(layout='wide')
 
