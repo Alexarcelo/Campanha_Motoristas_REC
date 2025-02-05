@@ -28,7 +28,7 @@ if 'df_servicos_abastecimentos' in st.session_state:
 
         with row0[0]:
 
-            veiculo = st.multiselect('Veículo', sorted(st.session_state.df_servicos_abastecimentos['Veiculo'].unique()), default=None)
+            veiculo = container_datas.multiselect('Veículo', sorted(st.session_state.df_servicos_abastecimentos['Veiculo'].unique()), default=None)
 
         with row1[0]:
 
