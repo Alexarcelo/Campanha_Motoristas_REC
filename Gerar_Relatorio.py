@@ -106,14 +106,16 @@ def tratar_colunas_df_abastecimentos(df, lista_colunas_texto, lista_colunas_nume
 
     df = pd.merge(df, st.session_state.df_motoristas[['Motorista Phoenix', 'Grupo Motorista']], left_on='Motorista', right_on='Motorista Phoenix', how='left')
 
+    return df
+
 def puxar_dados_google_drive():
 
     puxar_aba_simples(st.session_state.id_gsheet, 'Motoristas', 'df_motoristas')
 
     puxar_aba_simples(st.session_state.id_gsheet, 'Abastecimentos Ticket Log', 'df_abastecimentos')
 
-    tratar_colunas_df_abastecimentos(st.session_state.df_abastecimentos, ['Placa', 'Tipo de Veículo', 'Modelo', 'Motorista', 'Tipo de Combustível'], 
-                                     ['Número Frota', 'Matrícula', 'Litros', 'Valor/Litro', 'Hodômetro', 'Km Rodado', 'Km/Litro', 'Valor Total'])
+    st.session_state.df_abastecimentos = tratar_colunas_df_abastecimentos(st.session_state.df_abastecimentos, ['Placa', 'Tipo de Veículo', 'Modelo', 'Motorista', 'Tipo de Combustível'], 
+                                                                          ['Número Frota', 'Matrícula', 'Litros', 'Valor/Litro', 'Hodômetro', 'Km Rodado', 'Km/Litro', 'Valor Total'])
     
     puxar_aba_simples(st.session_state.id_gsheet, 'Serviços / Categorias', 'df_servicos_categorias')
 
