@@ -55,10 +55,26 @@ if data_inicial and data_final:
 
     df_filtro_data['Litros Consumidos Meta'] = df_filtro_data.apply(lambda row: round(row['Km Rodado']/row['Meta'], 2), axis=1)
 
-    df_resumo_performance_motorista = df_filtro_data.groupby('Motorista').agg({'Km Rodado': 'sum', 'Litros': 'sum', 'Litros Consumidos Meta': 'sum', 'Valor Total': 'sum'}).reset_index()
+    with row1[0]:
 
-    df_resumo_performance_motorista_geral_colunas = gerar_df_grid(df_resumo_performance_motorista, {'Litros': 'Litros Consumidos Real'}, 
-                                                                  ['Motorista', 'Km Rodado', 'Litros Consumidos Real', 'Litros Consumidos Meta', 'Economia'])
+        filtrar_grupo = st.multiselect('Grupo', sorted(df_filtro_data['Grupo Motorista'].unique()), default=None)
+
+    if len(filtrar_grupo)>0:
+
+        df_filtro_data = df_filtro_data[df_filtro_data['Grupo Motorista'].isin(filtrar_grupo)].reset_index(drop=True)
+
+        df_resumo_performance_motorista = df_filtro_data.groupby(['Motorista', 'Grupo Motorista']).agg({'Km Rodado': 'sum', 'Litros': 'sum', 'Litros Consumidos Meta': 'sum', 'Valor Total': 'sum'})\
+            .reset_index()
+        
+        df_resumo_performance_motorista_geral_colunas = gerar_df_grid(df_resumo_performance_motorista, {'Litros': 'Litros Consumidos Real'}, 
+                                                                    ['Motorista', 'Grupo Motorista', 'Km Rodado', 'Litros Consumidos Real', 'Litros Consumidos Meta', 'Economia'])
+        
+    else:
+
+        df_resumo_performance_motorista = df_filtro_data.groupby('Motorista').agg({'Km Rodado': 'sum', 'Litros': 'sum', 'Litros Consumidos Meta': 'sum', 'Valor Total': 'sum'}).reset_index()
+
+        df_resumo_performance_motorista_geral_colunas = gerar_df_grid(df_resumo_performance_motorista, {'Litros': 'Litros Consumidos Real'}, 
+                                                                    ['Motorista', 'Km Rodado', 'Litros Consumidos Real', 'Litros Consumidos Meta', 'Economia'])
     
     container_dataframe = st.container()
 
