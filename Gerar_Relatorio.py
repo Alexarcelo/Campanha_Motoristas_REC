@@ -168,8 +168,8 @@ def cruzar_servicos_e_abastecimentos(df_escalas_group):
 
     df_escalas_group = df_escalas_group.sort_values(by=['Data | Horario Apresentacao']).reset_index(drop=True)
 
-    df_resultado = pd.merge_asof(df_escalas_group, df_abastecimentos[['Data', 'Chave', 'Km/Litro', 'Tipo de Veículo', 'ano_mes', 'Litros', 'Km Rodado', 'Valor Total', 'Grupo Motorista']], by='Chave', 
-                                 left_on='Data | Horario Apresentacao', right_on='Data', direction='forward')
+    df_resultado = pd.merge_asof(df_escalas_group, df_abastecimentos[['Data', 'Chave', 'Km/Litro', 'Tipo de Veículo', 'Modelo', 'ano_mes', 'Litros', 'Km Rodado', 'Valor Total', 'Grupo Motorista']], 
+                                 by='Chave', left_on='Data | Horario Apresentacao', right_on='Data', direction='forward')
 
     df_resultado['Meta Batida'] = df_resultado.apply(lambda row: 1 if row['Km/Litro']>=row['Meta'] else 0, axis=1)
 
