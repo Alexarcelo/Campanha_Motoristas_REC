@@ -1,5 +1,15 @@
 import streamlit as st
 
+def mostrar_resultados(titulo, df_servicos_abastecimentos, colunas_group_by):
+
+    st.header(titulo)
+
+    df_agrupado = df_servicos_abastecimentos.groupby(colunas_group_by)[['Litros', 'Km Rodado']].sum().reset_index()
+
+    df_agrupado['Média Km/Litro'] = round(df_agrupado['Km Rodado'] / df_agrupado['Litros'], 2)
+
+    st.dataframe(df_agrupado, hide_index=True, use_container_width=True)
+
 st.set_page_config(layout='wide')
 
 st.title('Análise de Médias - Veículos por Categoria de Meta')
@@ -38,6 +48,12 @@ if 'df_servicos_abastecimentos' in st.session_state:
 
                 df_servicos_abastecimentos = df_servicos_abastecimentos[df_servicos_abastecimentos['Tipo de Veículo'].isin(tipo_veiculo)]
 
+            modelo_veiculo = container_datas.multiselect('Modelo de Veículo', sorted(df_servicos_abastecimentos['Modelo'].unique()), default=None)
+
+            if len(modelo_veiculo)>0:
+
+                df_servicos_abastecimentos = df_servicos_abastecimentos[df_servicos_abastecimentos['Modelo'].isin(modelo_veiculo)]
+
             veiculo = container_datas.multiselect('Veículo', sorted(df_servicos_abastecimentos['Veiculo'].unique()), default=None)
 
             if len(veiculo)>0:
@@ -48,21 +64,11 @@ if 'df_servicos_abastecimentos' in st.session_state:
 
             st.divider()
 
-        st.header('Resultados por Tipo de Veículo')
+        mostrar_resultados('Resultados por Modelo de Veículo', df_servicos_abastecimentos, ['Modelo', 'Categoria Meta'])
 
-        df_media_tp_veiculos = df_servicos_abastecimentos.groupby(['Tipo de Veículo', 'Categoria Meta'])[['Litros', 'Km Rodado']].sum().reset_index()
+        mostrar_resultados('Resultados por Tipo de Veículo', df_servicos_abastecimentos, ['Tipo de Veículo', 'Categoria Meta'])
 
-        df_media_tp_veiculos['Média Km/Litro'] = round(df_media_tp_veiculos['Km Rodado'] / df_media_tp_veiculos['Litros'], 2)
-
-        st.dataframe(df_media_tp_veiculos, hide_index=True, use_container_width=True)
-
-        st.header('Resultados por Veículo')
-
-        df_media_veiculos = df_servicos_abastecimentos.groupby(['Veiculo', 'Tipo de Veículo', 'Categoria Meta'])[['Litros', 'Km Rodado']].sum().reset_index()
-
-        df_media_veiculos['Média Km/Litro'] = round(df_media_veiculos['Km Rodado'] / df_media_veiculos['Litros'], 2)
-
-        st.dataframe(df_media_veiculos, hide_index=True, use_container_width=True)
+        mostrar_resultados('Resultados por Veículo', df_servicos_abastecimentos, ['Veiculo', 'Tipo de Veículo', 'Categoria Meta'])
     
 else:
 
