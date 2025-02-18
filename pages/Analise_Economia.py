@@ -42,6 +42,10 @@ with row1[0]:
 
     data_final = st.date_input('Data Final', value=None, format='DD/MM/YYYY', key='data_final')
 
+    st.subheader('Tipo de Análise')
+
+    tipo_analise = st.radio('', ['Tipo de Veículo', 'Modelo'], index=None)
+
 with row1[1]:
 
     st.subheader('Em relação à:')
@@ -50,7 +54,7 @@ with row1[1]:
 
     data_final_base = st.date_input('Data Final', value=None, format='DD/MM/YYYY', key='data_final_base')
 
-if data_inicial and data_final:
+if data_inicial and data_final and tipo_analise:
 
     with row2[0]:
 
@@ -64,11 +68,11 @@ if data_inicial and data_final:
 
     df_base = df_abastecimentos[(df_abastecimentos['Apenas Data']>=data_inicial_base) & (df_abastecimentos['Apenas Data']<=data_final_base) & (df_abastecimentos['Km/Litro']>0)].reset_index(drop=True)
 
-    df_resumo_performance_tipo_veiculo = df_filtro_data.groupby('Tipo de Veículo').agg({'Km Rodado': 'sum', 'Litros': 'sum', 'Valor Total': 'sum'}).reset_index()
+    df_resumo_performance_tipo_veiculo = df_filtro_data.groupby(tipo_analise).agg({'Km Rodado': 'sum', 'Litros': 'sum', 'Valor Total': 'sum'}).reset_index()
     
-    df_resumo_performance_tipo_veiculo_base = df_base.groupby('Tipo de Veículo').agg({'Km Rodado': 'sum', 'Litros': 'sum'}).reset_index()
+    df_resumo_performance_tipo_veiculo_base = df_base.groupby(tipo_analise).agg({'Km Rodado': 'sum', 'Litros': 'sum'}).reset_index()
 
-    df_resumo_performance_tipo_veiculo_geral_colunas = criar_df_merge(df_resumo_performance_tipo_veiculo, df_resumo_performance_tipo_veiculo_base, 'Tipo de Veículo')
+    df_resumo_performance_tipo_veiculo_geral_colunas = criar_df_merge(df_resumo_performance_tipo_veiculo, df_resumo_performance_tipo_veiculo_base, tipo_analise)
 
     gb = GridOptionsBuilder.from_dataframe(df_resumo_performance_tipo_veiculo_geral_colunas)
     gb.configure_selection('single')
@@ -84,14 +88,14 @@ if data_inicial and data_final:
 
     if selected_rows is not None and len(selected_rows)>0:
 
-        tipo_veiculo = selected_rows['Tipo de Veículo'].iloc[0]
+        tipo_veiculo = selected_rows[tipo_analise].iloc[0]
 
         if tipo_veiculo:
 
-            df_resumo_performance_veiculo = df_filtro_data[df_filtro_data['Tipo de Veículo']==tipo_veiculo].groupby('Veiculo')\
+            df_resumo_performance_veiculo = df_filtro_data[df_filtro_data[tipo_analise]==tipo_veiculo].groupby('Veiculo')\
                 .agg({'Km Rodado': 'sum', 'Litros': 'sum', 'Valor Total': 'sum'}).reset_index()
             
-            df_resumo_performance_veiculo_base = df_base[df_base['Tipo de Veículo']==tipo_veiculo].groupby('Veiculo')\
+            df_resumo_performance_veiculo_base = df_base[df_base[tipo_analise]==tipo_veiculo].groupby('Veiculo')\
                 .agg({'Km Rodado': 'sum', 'Litros': 'sum'}).reset_index()
             
             df_resumo_performance_veiculo_geral_colunas = criar_df_merge(df_resumo_performance_veiculo, df_resumo_performance_veiculo_base, 
@@ -114,11 +118,11 @@ if data_inicial and data_final:
                 veiculo = selected_rows_2['Veiculo'].iloc[0]
                 
                 df_resumo_performance_motorista_veiculo = df_filtro_data[(df_filtro_data['Veiculo']==veiculo) & 
-                                                                         (df_filtro_data['Tipo de Veículo']==tipo_veiculo)].groupby('Colaborador')\
+                                                                         (df_filtro_data[tipo_analise]==tipo_veiculo)].groupby('Colaborador')\
                     .agg({'Km Rodado': 'sum', 'Litros': 'sum', 'Valor Total': 'sum'}).reset_index()
                 
                 df_resumo_performance_motorista_veiculo_base = df_base[(df_base['Veiculo']==veiculo) & 
-                                                                              (df_base['Tipo de Veículo']==tipo_veiculo)].groupby('Colaborador')\
+                                                                              (df_base[tipo_analise]==tipo_veiculo)].groupby('Colaborador')\
                     .agg({'Km Rodado': 'sum', 'Litros': 'sum'}).reset_index()
                 
                 df_resumo_performance_motorista_veiculo_geral_colunas = criar_df_merge(df_resumo_performance_motorista_veiculo, 
