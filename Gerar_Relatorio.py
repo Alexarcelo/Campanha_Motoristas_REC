@@ -5,6 +5,7 @@ from google.oauth2 import service_account
 from datetime import timedelta
 import mysql.connector
 import decimal
+from datetime import time
 
 def gerar_df_phoenix(vw_name, base_luck):
     
@@ -156,7 +157,7 @@ def verificar_veiculos_sem_meta(df_escalas_group):
 
         st.stop()
 
-def cruzar_servicos_e_abastecimentos(df_escalas_group):
+def cruzar_servicos_e_abastecimentos(df_escalas_group, horario_inicio_madrugada, horario_final_madrugada, incremento_percentual):
 
     df_abastecimentos = st.session_state.df_abastecimentos.sort_values(by=['Data']).reset_index(drop=True)
 
@@ -170,6 +171,9 @@ def cruzar_servicos_e_abastecimentos(df_escalas_group):
 
     df_resultado = pd.merge_asof(df_escalas_group, df_abastecimentos[['Data', 'Chave', 'Km/Litro', 'Tipo de Veículo', 'Modelo', 'ano_mes', 'Litros', 'Km Rodado', 'Valor Total', 'Grupo Motorista']], 
                                  by='Chave', left_on='Data | Horario Apresentacao', right_on='Data', direction='forward')
+    
+    df_resultado.loc[(df_resultado['Data'].dt.time>=horario_inicio_madrugada) | (df_resultado['Data'].dt.time<=horario_final_madrugada), 'Meta'] = \
+        df_resultado.loc[(df_resultado['Data'].dt.time>=horario_inicio_madrugada) | (df_resultado['Data'].dt.time<=horario_final_madrugada), 'Meta'] * (1+incremento_percentual)
 
     df_resultado['Meta Batida'] = df_resultado.apply(lambda row: 1 if row['Km/Litro']>=row['Meta'] else 0, axis=1)
 
@@ -220,6 +224,14 @@ if not 'df_escalas' in st.session_state:
 # Ano e Mês de análise
 
 with row0[0]:
+
+    horario_inicio_madrugada = st.time_input('Horário Inicial Madrugada', time(20))
+
+    horario_final_madrugada = st.time_input('Horário Final Madrugada', time(4))
+
+    incremento_percentual = st.number_input('Incremento Percentual na Meta p/ Madrugadas', value=20)
+
+    incremento_percentual = incremento_percentual/100
 
     gerar_analise = st.button('Gerar Análise')
 
@@ -289,7 +301,7 @@ if gerar_analise:
 
     # Gerando dataframe com o cruzamento dos serviços e seus abastecimentos relativos
 
-    df_servicos_abastecimentos = cruzar_servicos_e_abastecimentos(df_escalas_group)
+    df_servicos_abastecimentos = cruzar_servicos_e_abastecimentos(df_escalas_group, horario_inicio_madrugada, horario_final_madrugada, incremento_percentual)
 
     # Retirando da análise as linhas que o robô não encontrou correspondência e avisando quais são elas
 
