@@ -41,7 +41,13 @@ with row1[0]:
 
     data_final = st.date_input('Data Final', value=None, format='DD/MM/YYYY', key='data_final')
 
-if data_inicial and data_final:
+with row1[1]:
+
+    st.subheader('Tipo de Análise')
+
+    tipo_analise = st.radio('', ['Motorista', 'Tipo de Veículo', 'Modelo'], index=None)
+
+if data_inicial and data_final and tipo_analise:
 
     with row2[0]:
 
@@ -55,27 +61,54 @@ if data_inicial and data_final:
 
     df_filtro_data['Litros Consumidos Meta'] = df_filtro_data.apply(lambda row: round(row['Km Rodado']/row['Meta'], 2), axis=1)
 
-    with row1[0]:
+    if tipo_analise=='Motorista':
 
-        filtrar_grupo = st.multiselect('Grupo', sorted(df_filtro_data['Grupo Motorista'].unique()), default=None)
+        with row1[0]:
 
-    if len(filtrar_grupo)>0:
+            filtrar_grupo = st.multiselect('Grupo', sorted(df_filtro_data['Grupo Motorista'].unique()), default=None)
 
-        df_filtro_data = df_filtro_data[df_filtro_data['Grupo Motorista'].isin(filtrar_grupo)].reset_index(drop=True)
+        if len(filtrar_grupo)>0:
 
-        df_resumo_performance_motorista = df_filtro_data.groupby(['Motorista', 'Grupo Motorista']).agg({'Km Rodado': 'sum', 'Litros': 'sum', 'Litros Consumidos Meta': 'sum', 'Valor Total': 'sum'})\
+            df_filtro_data = df_filtro_data[df_filtro_data['Grupo Motorista'].isin(filtrar_grupo)].reset_index(drop=True)
+
+            df_resumo_performance_motorista = df_filtro_data.groupby(['Motorista', 'Grupo Motorista']).agg({'Km Rodado': 'sum', 'Litros': 'sum', 'Litros Consumidos Meta': 'sum', 'Valor Total': 'sum'})\
+                .reset_index()
+            
+            df_resumo_performance_motorista_geral_colunas = gerar_df_grid(df_resumo_performance_motorista, {'Litros': 'Litros Consumidos Real'}, 
+                                                                        ['Motorista', 'Grupo Motorista', 'Km Rodado', 'Litros Consumidos Real', 'Litros Consumidos Meta', 'Economia'])
+            
+        else:
+
+            df_resumo_performance_motorista = df_filtro_data.groupby('Motorista').agg({'Km Rodado': 'sum', 'Litros': 'sum', 'Litros Consumidos Meta': 'sum', 'Valor Total': 'sum'}).reset_index()
+
+            df_resumo_performance_motorista_geral_colunas = gerar_df_grid(df_resumo_performance_motorista, {'Litros': 'Litros Consumidos Real'}, 
+                                                                        ['Motorista', 'Km Rodado', 'Litros Consumidos Real', 'Litros Consumidos Meta', 'Economia'])
+        
+        container_dataframe = st.container()
+
+        container_dataframe.dataframe(df_resumo_performance_motorista_geral_colunas, hide_index=True, use_container_width=True)
+
+    elif tipo_analise=='Tipo de Veículo':
+
+        df_resumo_performance_tp_veiculo = df_filtro_data.groupby(['Tipo de Veículo']).agg({'Km Rodado': 'sum', 'Litros': 'sum', 'Litros Consumidos Meta': 'sum', 'Valor Total': 'sum'})\
             .reset_index()
         
-        df_resumo_performance_motorista_geral_colunas = gerar_df_grid(df_resumo_performance_motorista, {'Litros': 'Litros Consumidos Real'}, 
-                                                                    ['Motorista', 'Grupo Motorista', 'Km Rodado', 'Litros Consumidos Real', 'Litros Consumidos Meta', 'Economia'])
+        df_resumo_performance_tp_veiculo_geral_colunas = gerar_df_grid(df_resumo_performance_tp_veiculo, {'Litros': 'Litros Consumidos Real'}, 
+                                                                       ['Tipo de Veículo', 'Km Rodado', 'Litros Consumidos Real', 'Litros Consumidos Meta', 'Economia'])
         
-    else:
+        container_dataframe = st.container()
 
-        df_resumo_performance_motorista = df_filtro_data.groupby('Motorista').agg({'Km Rodado': 'sum', 'Litros': 'sum', 'Litros Consumidos Meta': 'sum', 'Valor Total': 'sum'}).reset_index()
+        container_dataframe.dataframe(df_resumo_performance_tp_veiculo_geral_colunas, hide_index=True, use_container_width=True)
 
-        df_resumo_performance_motorista_geral_colunas = gerar_df_grid(df_resumo_performance_motorista, {'Litros': 'Litros Consumidos Real'}, 
-                                                                    ['Motorista', 'Km Rodado', 'Litros Consumidos Real', 'Litros Consumidos Meta', 'Economia'])
-    
-    container_dataframe = st.container()
+    elif tipo_analise=='Modelo':
 
-    container_dataframe.dataframe(df_resumo_performance_motorista_geral_colunas, hide_index=True, use_container_width=True)
+        df_resumo_performance_tp_veiculo = df_filtro_data.groupby(['Modelo']).agg({'Km Rodado': 'sum', 'Litros': 'sum', 'Litros Consumidos Meta': 'sum', 'Valor Total': 'sum'})\
+            .reset_index()
+        
+        df_resumo_performance_tp_veiculo_geral_colunas = gerar_df_grid(df_resumo_performance_tp_veiculo, {'Litros': 'Litros Consumidos Real'}, 
+                                                                       ['Modelo', 'Km Rodado', 'Litros Consumidos Real', 'Litros Consumidos Meta', 'Economia'])
+        
+        container_dataframe = st.container()
+
+        container_dataframe.dataframe(df_resumo_performance_tp_veiculo_geral_colunas, hide_index=True, use_container_width=True)
+
