@@ -276,4 +276,6 @@ if data_inicial and data_final:
 
         df_filtro_metas = df_filtro_colunas[df_filtro_colunas['Metas Batidas']==1][['Motorista', 'Veiculo', 'Média Km/l', 'Meta Km/l']].reset_index(drop=True)
 
+        df_filtro_metas = df_filtro_metas.drop_duplicates()
+
         exibir_tabela(df_filtro_metas)
