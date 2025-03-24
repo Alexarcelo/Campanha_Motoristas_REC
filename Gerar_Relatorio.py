@@ -403,7 +403,7 @@ def verificar_servicos_sem_abastecimentos(df_servicos_abastecimentos):
 
     return df_servicos_abastecimentos
 
-def gerar_df_historico():
+def gerar_df_historico(df_insercao=None):
 
     puxar_aba_simples(
         st.session_state.id_gsheet, 
@@ -423,7 +423,9 @@ def gerar_df_historico():
 
         df_historico = transformar_coluna_em_numerica(df_historico, coluna)
 
-    df_historico = df_historico[~df_historico['Data da Escala'].isin(df_insercao['Data da Escala'].unique().tolist())]
+    if df_insercao is not None:
+
+        df_historico = df_historico[~df_historico['Data da Escala'].isin(df_insercao['Data da Escala'].unique().tolist())]
 
     return df_historico
 
@@ -565,7 +567,7 @@ if 'df_servicos_abastecimentos' in st.session_state:
 
         with st.spinner('Salvando dados no Google Drive...'):
         
-            df_historico = gerar_df_historico()
+            df_historico = gerar_df_historico(df_insercao)
 
             df_insercao = pd.concat(
                 [
@@ -584,5 +586,3 @@ if 'df_servicos_abastecimentos' in st.session_state:
                 st.session_state.id_gsheet, 
                 'Serviços x Abastecimentos'
             )
-
-        
